@@ -1,7 +1,6 @@
 use bevy::{
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
-    window::{CursorGrabMode, PresentMode, WindowLevel},
+    window::{PresentMode},
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
@@ -23,43 +22,37 @@ fn main() {
         }),
         ..default()
     }))
+    .register_type::<Pole>()
+    .add_startup_system(setup_asset)
     .add_startup_system(setup_scene)
     .add_startup_system(setup_camera)
     .add_plugin(WorldInspectorPlugin::new())
     .run();
 }
 
-#[derive(Component)]
-struct SkillSphere;
-
-/*#[derive(Bundle)]
-struct SpherePole{
-    origin: SkillSphere,
-    skillname: str,
-    location: Vec3,
-
-}*/
-
-#[derive(Component)]
-struct SphereCamera{
-    /// The "focus point" to orbit around. It is automatically updated when panning the camera
-    pub focus: Vec3,
-    pub radius: f32,
-    pub upside_down: bool,
+#[derive(Reflect, Component, Default)]
+#[reflect(Component)]
+pub struct Pole {
+    skillname: String,
+    locaation: Vec3,
 }
 
-/// set up a simple 3D scene
 fn setup_scene(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Icosphere::default().try_into().unwrap()),
-        material: materials.add(Color::rgb(1.0, 0.1, 0.1).into()),
+    commands.spawn(SceneBundle {
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..default()
     }).insert(Name::new("Sphere"));
+
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
+        material: materials.add(Color::rgb(0.0, 0.7, 0.0).into()),
+        transform: Transform::from_xyz(0.0, 1.0, 0.0),
+        ..default()
+    }).insert(Name::new("Pole"));
 
     commands.spawn(PointLightBundle {
         point_light: PointLight {
@@ -80,5 +73,18 @@ fn setup_camera(
         transform: Transform::from_xyz(-2.0, 2.5, 5.0)
         .looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
+    });
+}
+
+fn setup_asset(
+    mut commands: Commands, 
+    asset_server: Res<AssetServer>
+) {
+    let sphere_asset = asset_server.load("Star.glb#Scene0");
+
+    commands.spawn(SceneBundle {
+        scene: sphere_asset,
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+        ..Default::default()
     });
 }
