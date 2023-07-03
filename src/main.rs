@@ -49,7 +49,7 @@ fn setup_scene(
     asset_server: Res<AssetServer>,
 ) {
     let skillsphere = commands.spawn(SceneBundle {
-        scene: asset_server.load("Star4.glb#Scene0"),
+        scene: asset_server.load("Star.glb#Scene0"),
         transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..Default::default()
     }).insert(Name::new("Sphere")).id();
