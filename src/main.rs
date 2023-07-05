@@ -1,6 +1,13 @@
 use bevy::{
     prelude::*,
-    window::{PresentMode},
+    window::{PresentMode}, 
+    render::{
+        mesh::{
+            Indices, PrimitiveTopology,
+            VertexAttributeValues, self,
+        },
+        render_resource::{AsBindGroup, ShaderRef},
+    }, math::Vec3A,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_atmosphere::prelude::*;
@@ -25,6 +32,7 @@ fn main() {
     }))
     .add_plugin(AtmospherePlugin)
     .add_startup_system(setup_scene)
+    .add_startup_system(setup_skillsphere)
     .add_startup_system(setup_camera)
     .add_plugin(WorldInspectorPlugin::new())
     .run();
@@ -39,33 +47,12 @@ pub struct SkillSphere {
 #[derive(Reflect, Component, Default)]
 #[reflect(Component)]
 pub struct Pole {
-    skillname: String,
+    skill_name: String,
 }
 
 fn setup_scene(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
 ) {
-    let skillsphere = commands.spawn(SceneBundle {
-        scene: asset_server.load("Star.glb#Scene0"),
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
-        ..Default::default()
-    }).insert(Name::new("Sphere")).id();
-
-    let pole = commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
-        material: materials.add(Color::rgb(0.7, 0.0, 0.0).into()),
-        transform: Transform::from_xyz(0.0, 1.0, 0.0),
-        ..default()
-    }).insert(Pole{
-        skillname: "Fire".to_string(), 
-    }).insert(Name::new("Pole")).id();
-
-    // add the child to the parent
-    commands.entity(skillsphere).push_children(&[pole]);
-
     commands.spawn(PointLightBundle {
         point_light: PointLight {
             intensity: 1500.0,
@@ -80,7 +67,82 @@ fn setup_scene(
         rayleigh_coefficient: Vec3::new(2e-5, 1e-5, 2e-5),
         ..default()
     }));
+}
+
+fn setup_skillsphere(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
+    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+
+    let tetra_lenght: f32 = 1.0;
+    /*let mut tetra_vertices = vec![];
+
+
+    tetra_vertices.push(Vec3::new(0.0, tetra_lenght * f32::sqrt(2./3.), 0.0)); //apex) 
+    tetra_vertices.push(Vec3::new(tetra_lenght / f32::sqrt(3.), 0.0, 0.0));
+    tetra_vertices.push(Vec3::new(0.0, -(1. / (2. * f32::sqrt(3.))), tetra_lenght / 2.));
+    tetra_vertices.push(Vec3::new(0.0, -(1. / (2. * f32::sqrt(3.))), -(tetra_lenght / 2.)));*/
+
+    let tetra_vertices = vec![
+        Vec3::new(0.0, tetra_lenght * f32::sqrt(2./3.), 0.0), //apex
+        Vec3::new(tetra_lenght / f32::sqrt(3.), 0.0, 0.0),
+        Vec3::new(0.0, -(1. / (2. * f32::sqrt(3.))), tetra_lenght / 2.),
+        Vec3::new(0.0, -(1. / (2. * f32::sqrt(3.))), -(tetra_lenght / 2.))
+    ];
+
+   /* // Triangle side #1
+    tetra_indices.push(mesh::Indices::U32(vec![0, 2, 1]));
+    // Triangle side #2
+    tetra_indices.push(mesh::Indices::U32(vec![0, 2, 3]));
+    // Triangle side #3
+    tetra_indices.push(mesh::Indices::U32(vec![0, 3, 1]));
+    // Triangle #4 bottom
+    tetra_indices.push(mesh::Indices::U32(vec![1, 2, 3]));*/
+
+    let tetra_indices = Indices::U32(vec![
+        0, 2, 1,
+        0, 3, 2,
+        0, 3, 1,
+        1, 2, 3
+    ]);
+
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION,tetra_vertices);
+    // A triangle using vertices 0, 2, and 1.
+    // Note: order matters. [0, 1, 2] will be flipped upside down, and you won't see it from behind!
+    //mesh.set_indices(Some(mesh::Indices::U32(vec![0, 2, 1])));
+    mesh.set_indices(Some(tetra_indices));
+
+
+    //mesh.set_indices(Some(tetra_indices.into_iter().map(Some).collect()));
+    //let as_option: Vec<Option<Indices>> = tetra_indices.into_iter().map(Some).collect();
+    //mesh.set_indices(as_option.into_iter().collect());
+
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(mesh),
+        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        ..default()
+    });
     
+    /*let skillsphere = commands.spawn(SceneBundle {
+        scene: asset_server.load("Star.glb#Scene0"),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
+        ..Default::default()
+    }).insert(Name::new("Sphere")).id();*/
+
+    /*let pole = commands.spawn(PbrBundle {
+        mesh: meshes.add(Mesh::from(shape::Cube { size: 0.5 })),
+        material: materials.add(Color::rgb(0.7, 0.0, 0.0).into()),
+        transform: Transform::from_xyz(0.0, 1.0, 0.0),
+        ..default()
+    }).insert(Pole{
+        skill_name: "Fire".to_string(), 
+    }).insert(Name::new("Pole")).id();
+
+    // add the child to the parent
+    commands.entity(skillsphere).push_children(&[pole]);*/
 }
 
 fn setup_camera(
